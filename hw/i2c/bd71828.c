@@ -7,6 +7,7 @@
 #include "migration/vmstate.h"
 #include "qemu/bcd.h"
 #include "qemu/module.h"
+#include "qemu/timer.h"
 #include "system/rtc.h"
 #include "system/runstate.h"
 
@@ -108,6 +109,31 @@ static void bd71828_vbus(void *opaque, int input, int level)
 static bool bd71828_get_power_button(Object *obj, Error **errp)
 {
     return BD71828(obj)->power_button;
+}
+
+static void bd71828_power_release_timer(void *opaque)
+{
+    object_property_set_bool(opaque, "power-button", false, NULL);
+}
+
+static QEMUTimer *bd71828_power_timer_static;
+
+/* Host-side convenience hook: press and release the (synthetic) power
+ * button after a short hold, as if the user clicked it. */
+void bd71828_power_button_click(void)
+{
+    Object *pmic = object_resolve_path("/machine/pmic", NULL);
+
+    if (!pmic) {
+        return;
+    }
+    object_property_set_bool(pmic, "power-button", true, NULL);
+    if (!bd71828_power_timer_static) {
+        bd71828_power_timer_static = timer_new_ms(
+            QEMU_CLOCK_REALTIME, bd71828_power_release_timer, pmic);
+    }
+    timer_mod(bd71828_power_timer_static,
+              qemu_clock_get_ms(QEMU_CLOCK_REALTIME) + 200);
 }
 
 static void bd71828_set_power_button(Object *obj, bool value, Error **errp)

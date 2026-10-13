@@ -50,6 +50,7 @@
 #include "qemu/error-report.h"
 #include <Carbon/Carbon.h>
 #include "hw/core/cpu.h"
+#include "hw/i2c/bd71828.h"
 
 #ifndef MAC_OS_VERSION_14_0
 #define MAC_OS_VERSION_14_0 140000
@@ -1289,6 +1290,7 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 - (void)displayPause;
 - (void)removePause;
 - (void)restartQEMU:(id)sender;
+- (void)clickPowerButton:(id)sender;
 - (void)powerDownQEMU:(id)sender;
 - (void)ejectDeviceMedia:(id)sender;
 - (void)changeDeviceMedia:(id)sender;
@@ -1576,6 +1578,14 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     });
 }
 
+/* Clicks the machine's PMIC power button (Kobo wake/sleep) */
+- (void)clickPowerButton:(id)sender
+{
+    with_bql(^{
+        bd71828_power_button_click();
+    });
+}
+
 /* Powers down QEMU */
 - (void)powerDownQEMU:(id)sender
 {
@@ -1772,6 +1782,7 @@ static void create_initial_menus(void)
     [menuItem setEnabled: NO];
     [menu addItem: [NSMenuItem separatorItem]];
     [menu addItem: [[[NSMenuItem alloc] initWithTitle: @"Reset" action: @selector(restartQEMU:) keyEquivalent: @""] autorelease]];
+    [menu addItem: [[[NSMenuItem alloc] initWithTitle: @"Press Power Button" action: @selector(clickPowerButton:) keyEquivalent: @""] autorelease]];
     [menu addItem: [[[NSMenuItem alloc] initWithTitle: @"Power Down" action: @selector(powerDownQEMU:) keyEquivalent: @""] autorelease]];
     menuItem = [[[NSMenuItem alloc] initWithTitle: @"Machine" action:nil keyEquivalent:@""] autorelease];
     [menuItem setSubmenu:menu];

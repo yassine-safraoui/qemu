@@ -309,6 +309,13 @@ config MT8113_ELIPSA2E
     select MT8110_BELLATRIX
     select SPLIT_IRQ
 
+config MT8113_LIBRA
+    bool
+    default y
+    depends on TCG && AARCH64
+    select MT8110_BELLATRIX
+    select SPLIT_IRQ
+
 config MT8110_BELLATRIX
     bool
     default y
