@@ -163,8 +163,10 @@ static void elan_input_sync(DeviceState *dev)
     s->rx[62] = 1; /* contact count in the 0x3f HID report */
     s->rx[3] = 4 | (s->down ? 3 : 0); /* contact ID 1, down/up */
     s->rx[4] = s->down ? 8 : 0;
-    /* Undo Nickel's landscape-sensor to portrait-screen transform. */
-    stw_le_p(s->rx + 8, qemu_input_scale_axis(INPUT_EVENT_ABS_MAX - s->y,
+    /* The sensor axis1 runs top-to-bottom on the panel; the guest driver
+     * (elants_i2c with screen_max_x 1680) and Nickel's landscape→portrait
+     * rotation account for orientation from there. */
+    stw_le_p(s->rx + 8, qemu_input_scale_axis(s->y,
         INPUT_EVENT_ABS_MIN, INPUT_EVENT_ABS_MAX, 0, 1888));
     stw_le_p(s->rx + 12, qemu_input_scale_axis(s->x,
         INPUT_EVENT_ABS_MIN, INPUT_EVENT_ABS_MAX, 0, 1408));
