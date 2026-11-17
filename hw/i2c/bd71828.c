@@ -307,7 +307,10 @@ static void bd71828_reset(DeviceState *dev)
     s->regs[BD71828_REG_BATID] = BD71828_SUNWODA_BATID;
     bd71828_store_be16(s, BD71828_REG_BTMP_U, BD71828_BTMP_25C);
     bd71828_store_be32(s, BD71828_REG_CC_CNT3, 1296U << 16);
-    bd71828_store_be32(s, BD71828_REG_CC_FULL3, 0);
+    /* Full-capacity seed: keep CC_FULL >= CC_CNT so the charger driver
+     * reports a sane state of charge (FULL == CNT means "battery full")
+     * instead of learning cap 0 and Nickel shutting down to charge. */
+    bd71828_store_be32(s, BD71828_REG_CC_FULL3, 1296U << 16);
     bd71828_rtc_capture(s);
     for (unsigned gpio = 0; gpio < ARRAY_SIZE(s->gpio_out); gpio++) {
         bd71828_update_gpio(s, gpio);
